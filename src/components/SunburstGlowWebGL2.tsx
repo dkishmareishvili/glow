@@ -14,15 +14,15 @@ const YOLK_CENTER_Y = 0.46;
 const YOLK_RADIUS = 0.055;
 
 const RAY_COUNT = 10;
-const RAY_POWER = 1.5; // Higher = sharper ray corners
+const RAY_POWER = 0.01; // Lower = wider/broader rays
 const RAY_INTENSITY = 0.8;
 
-const WAVE_SPEED = 1.0;
+const WAVE_SPEED = 0.3;
 const WAVE_FREQUENCY = 40.0;
 
 const WAVE1_AMPLITUDE = 0.3;
 const WAVE1_BASE = 0.4;
-const WAVE1_SPEED_MULT = 4.0;
+const WAVE1_SPEED_MULT = 9.0;
 const WAVE1_BLEND = 0.6;
 
 const WAVE2_AMPLITUDE = 0.2;
@@ -35,15 +35,15 @@ const WAVE2_BLEND = 0.4;
 const RAY_WAVE_BLEND = 0.6;
 const WAVE_ONLY_BLEND = 0.15;
 
-const GLOW_FALLOFF_RATE = 4.0;
-const GLOW_INTENSITY = 0.7;
+const GLOW_FALLOFF_RATE = 1.0;
+const GLOW_INTENSITY = 0.4;
 
 const OUTER_PULSE_FREQ = 1.2;
 const OUTER_PULSE_AMPLITUDE = 0.1;
 const OUTER_PULSE_BASE = 0.9;
 
 const BLOOM_FALLOFF_RATE = 10.0;
-const BLOOM_INTENSITY = 0.05;
+const BLOOM_INTENSITY = 0.15;
 
 const INNER_GLOW_INTENSITY = 0.1;
 const INNER_GLOW_PULSE_SPEED = 0.5;
@@ -136,20 +136,16 @@ float radiatingRays(vec2 uv, vec2 center, float time, float rayCount, float dist
   // Distance from yolk edge (rays start from contour, not center)
   float edgeDist = max(0.0, dist - yolkRadius);
 
-  // Angular rays
-  float rays = pow(max(0.0, sin(angle * rayCount)), RAY_POWER) * RAY_INTENSITY;
-
   // Wave 1 - main radiating pulse (from edge)
   float wave1 = sin(edgeDist * WAVE_FREQUENCY - time * WAVE_SPEED * WAVE1_SPEED_MULT) * WAVE1_AMPLITUDE + WAVE1_BASE;
 
   // Wave 2 - secondary pulse (from edge)
   float wave2 = sin(edgeDist * WAVE_FREQUENCY * WAVE2_FREQ_MULT - time * WAVE_SPEED * WAVE2_SPEED_MULT + WAVE2_PHASE_OFFSET) * WAVE2_AMPLITUDE + WAVE2_BASE;
 
-  // Combine waves
+  // Combine waves into circular glow (no angular rays)
   float radiatingWave = wave1 * WAVE1_BLEND + wave2 * WAVE2_BLEND;
 
-  // Combine angular rays with radiating waves
-  return rays * radiatingWave * RAY_WAVE_BLEND + radiatingWave * WAVE_ONLY_BLEND;
+  return radiatingWave * RAY_INTENSITY;
 }
 
 float glowFalloff(float dist, float yolkRadius) {
