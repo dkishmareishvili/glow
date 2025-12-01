@@ -4,6 +4,7 @@ import typegpu from 'unplugin-typegpu/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/glow/',
   plugins: [
     typegpu({ include: [/\.tsx?$/] }),
     react({
