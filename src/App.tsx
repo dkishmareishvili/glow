@@ -1,18 +1,14 @@
-import { SunburstGlow } from './components/SunburstGlow'
-import khachapuriImage from './assets/bb.jpg'
-import './App.css'
+// import { SunburstGlow } from './components/SunburstGlow'
+import khachapuriImage from "./assets/bb.jpg";
+import "./App.css";
+import { SunburstGlowWebGL2 } from "./components/SunburstGlowWebGL2";
 
 function App() {
   return (
     <div className="app-container">
-    
-      <p className="subtitle">WebGPU-powered glow effect using TypeGPU</p>
-      <SunburstGlow
-        imageSrc={khachapuriImage}
-        maxWidth={800}
-      />
+      <SunburstGlowWebGL2 imageSrc={khachapuriImage} maxWidth={800} />
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
