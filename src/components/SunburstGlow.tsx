@@ -20,7 +20,7 @@ const YOLK_RADIUS = 0.05;
 // Ray appearance
 const RAY_COUNT = 10;
 const RAY_POWER = 1.5; // Higher = sharper rays, lower = broader rays
-const RAY_INTENSITY = 0.7; // Base ray brightness
+const RAY_INTENSITY = 0.9; // Base ray brightness
 
 // Wave animation
 const WAVE_SPEED = 1.5; // Speed of radiating waves
@@ -56,6 +56,11 @@ const OUTER_PULSE_BASE = 0.9;
 // Bloom halo
 const BLOOM_FALLOFF_RATE = 10.0; // How quickly bloom fades
 const BLOOM_INTENSITY = 0.05; // Bloom brightness
+
+// Inner yolk glow (the yolk glows as a whole before rays start)
+const INNER_GLOW_INTENSITY = 0.1; // Very subtle inner glow
+const INNER_GLOW_PULSE_SPEED = 0.8; // Slow pulse
+const INNER_GLOW_PULSE_AMOUNT = 0.3; // How much the glow pulses (0-1)
 
 // Glow color (RGB, 0-1 range)
 const GLOW_COLOR_R = 1.0;
@@ -283,12 +288,36 @@ const fragmentMain = tgpu["~unstable"]
     );
     const bloomColor = std.mul(uniforms.glowColor, bloom);
 
+    // Inner yolk glow - subtle pulsing luminosity inside the yolk
+    const insideYolk = std.sub(1.0, outsideYolk);
+    const innerPulse = std.add(
+      std.mul(
+        std.sin(std.mul(uniforms.time, INNER_GLOW_PULSE_SPEED)),
+        INNER_GLOW_PULSE_AMOUNT
+      ),
+      std.sub(1.0, INNER_GLOW_PULSE_AMOUNT)
+    );
+    const innerGlow = std.mul(
+      std.mul(INNER_GLOW_INTENSITY, innerPulse),
+      insideYolk
+    );
+    const innerGlowColor = std.mul(uniforms.glowColor, innerGlow);
+
     // Final color
     return {
       color: d.vec4f(
-        std.add(std.add(originalColor.x, glowContribution.x), bloomColor.x),
-        std.add(std.add(originalColor.y, glowContribution.y), bloomColor.y),
-        std.add(std.add(originalColor.z, glowContribution.z), bloomColor.z),
+        std.add(
+          std.add(std.add(originalColor.x, glowContribution.x), bloomColor.x),
+          innerGlowColor.x
+        ),
+        std.add(
+          std.add(std.add(originalColor.y, glowContribution.y), bloomColor.y),
+          innerGlowColor.y
+        ),
+        std.add(
+          std.add(std.add(originalColor.z, glowContribution.z), bloomColor.z),
+          innerGlowColor.z
+        ),
         originalColor.w
       ),
     };
