@@ -11,10 +11,8 @@ interface SunburstGlowWebGL2Props {
 
 const YOLK_CENTER_X = 0.501;
 const YOLK_CENTER_Y = 0.46;
-const YOLK_RADIUS = 0.055;
+const YOLK_RADIUS = 0.00055;
 
-const RAY_COUNT = 10;
-const RAY_POWER = 0.01; // Lower = wider/broader rays
 const RAY_INTENSITY = 0.8;
 
 const WAVE_SPEED = 0.3;
@@ -31,9 +29,6 @@ const WAVE2_SPEED_MULT = 2.5;
 const WAVE2_FREQ_MULT = 0.5;
 const WAVE2_PHASE_OFFSET = 1.5;
 const WAVE2_BLEND = 0.4;
-
-const RAY_WAVE_BLEND = 0.6;
-const WAVE_ONLY_BLEND = 0.15;
 
 const GLOW_FALLOFF_RATE = 1.0;
 const GLOW_INTENSITY = 0.4;
@@ -93,7 +88,6 @@ precision highp float;
 uniform float uTime;
 uniform vec2 uYolkCenter;
 uniform float uYolkRadius;
-uniform float uRayCount;
 uniform float uGlowIntensity;
 uniform float uAspectRatio;
 uniform vec3 uGlowColor;
@@ -103,7 +97,6 @@ in vec2 vUv;
 out vec4 fragColor;
 
 // Constants (using toFixed to ensure float format in GLSL)
-const float RAY_POWER = ${RAY_POWER.toFixed(4)};
 const float RAY_INTENSITY = ${RAY_INTENSITY.toFixed(4)};
 const float WAVE_SPEED = ${WAVE_SPEED.toFixed(4)};
 const float WAVE_FREQUENCY = ${WAVE_FREQUENCY.toFixed(4)};
@@ -117,8 +110,6 @@ const float WAVE2_SPEED_MULT = ${WAVE2_SPEED_MULT.toFixed(4)};
 const float WAVE2_FREQ_MULT = ${WAVE2_FREQ_MULT.toFixed(4)};
 const float WAVE2_PHASE_OFFSET = ${WAVE2_PHASE_OFFSET.toFixed(4)};
 const float WAVE2_BLEND = ${WAVE2_BLEND.toFixed(4)};
-const float RAY_WAVE_BLEND = ${RAY_WAVE_BLEND.toFixed(4)};
-const float WAVE_ONLY_BLEND = ${WAVE_ONLY_BLEND.toFixed(4)};
 const float GLOW_FALLOFF_RATE = ${GLOW_FALLOFF_RATE.toFixed(4)};
 const float OUTER_PULSE_FREQ = ${OUTER_PULSE_FREQ.toFixed(4)};
 const float OUTER_PULSE_AMPLITUDE = ${OUTER_PULSE_AMPLITUDE.toFixed(4)};
@@ -129,11 +120,8 @@ const float INNER_GLOW_INTENSITY = ${INNER_GLOW_INTENSITY.toFixed(4)};
 const float INNER_GLOW_PULSE_SPEED = ${INNER_GLOW_PULSE_SPEED.toFixed(4)};
 const float INNER_GLOW_PULSE_AMOUNT = ${INNER_GLOW_PULSE_AMOUNT.toFixed(4)};
 
-float radiatingRays(vec2 uv, vec2 center, float time, float rayCount, float dist, float yolkRadius) {
-  vec2 dir = uv - center;
-  float angle = atan(dir.y, dir.x);
-
-  // Distance from yolk edge (rays start from contour, not center)
+float circularGlow(vec2 uv, vec2 center, float time, float dist, float yolkRadius) {
+  // Distance from yolk edge
   float edgeDist = max(0.0, dist - yolkRadius);
 
   // Wave 1 - main radiating pulse (from edge)
@@ -162,10 +150,10 @@ void main() {
   vec2 correctedToYolk = vec2(toYolk.x * uAspectRatio, toYolk.y);
   float dist = length(correctedToYolk);
 
-  // Calculate radiating sunburst rays (aspect-corrected UV)
+  // Calculate circular glow (aspect-corrected UV)
   vec2 correctedUV = vec2(vUv.x * uAspectRatio, vUv.y);
   vec2 correctedCenter = vec2(uYolkCenter.x * uAspectRatio, uYolkCenter.y);
-  float rayIntensity = radiatingRays(correctedUV, correctedCenter, uTime, uRayCount, dist, uYolkRadius);
+  float glowAmount = circularGlow(correctedUV, correctedCenter, uTime, dist, uYolkRadius);
 
   // Calculate glow falloff
   float falloff = glowFalloff(dist, uYolkRadius);
@@ -176,8 +164,8 @@ void main() {
   // Mask: 0 inside yolk, 1 outside (hide glow inside yolk area)
   float outsideYolk = step(uYolkRadius, dist);
 
-  // Combine ray pattern with falloff
-  float glowStrength = rayIntensity * falloff * uGlowIntensity * pulse * outsideYolk;
+  // Combine glow pattern with falloff
+  float glowStrength = glowAmount * falloff * uGlowIntensity * pulse * outsideYolk;
 
   // Warm glow color contribution
   vec3 glowContribution = uGlowColor * glowStrength;
@@ -324,7 +312,6 @@ export function SunburstGlowWebGL2({
           uTime: gl.getUniformLocation(program, "uTime"),
           uYolkCenter: gl.getUniformLocation(program, "uYolkCenter"),
           uYolkRadius: gl.getUniformLocation(program, "uYolkRadius"),
-          uRayCount: gl.getUniformLocation(program, "uRayCount"),
           uGlowIntensity: gl.getUniformLocation(program, "uGlowIntensity"),
           uAspectRatio: gl.getUniformLocation(program, "uAspectRatio"),
           uGlowColor: gl.getUniformLocation(program, "uGlowColor"),
@@ -371,7 +358,6 @@ export function SunburstGlowWebGL2({
           gl.uniform1f(uniforms.uTime, currentTime);
           gl.uniform2f(uniforms.uYolkCenter, YOLK_CENTER_X, YOLK_CENTER_Y);
           gl.uniform1f(uniforms.uYolkRadius, YOLK_RADIUS);
-          gl.uniform1f(uniforms.uRayCount, RAY_COUNT);
           gl.uniform1f(uniforms.uGlowIntensity, GLOW_INTENSITY);
           gl.uniform1f(uniforms.uAspectRatio, imageAspect);
           gl.uniform3f(
